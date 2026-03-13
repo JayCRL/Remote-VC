@@ -1,0 +1,26 @@
+# Go binaries
+*.exe
+agent.exe
+agent.exe~
+
+# Logs
+*.log
+agent_debug.log
+agent_vibe.log
+agent_err.log
+agent_output.log
+
+# Flutter build artifacts
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/pubspec.lock
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Skill artifacts
+*.skill
