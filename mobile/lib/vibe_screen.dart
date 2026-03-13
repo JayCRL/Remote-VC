@@ -35,31 +35,34 @@ class _VibeScreenState extends State<VibeScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: const Color(0xFF222222),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Row(
           children: [
-            Icon(Icons.security, color: Colors.orangeAccent),
-            SizedBox(width: 8),
-            Text("安全审批请求", style: TextStyle(color: Colors.white)),
+            Icon(Icons.auto_awesome, color: Color(0xFFFFB300)),
+            SizedBox(width: 12),
+            Text("AI 权限审批", style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text(payload['prompt'] ?? "AI 正在等待您的确认权限。", style: const TextStyle(color: Colors.white70)),
+        content: Text(payload['prompt'] ?? "AI 需要您的操作确认才能继续。", style: const TextStyle(fontSize: 16)),
         actions: [
           TextButton(
             onPressed: () {
               context.read<AgentClientProvider>().sendAction("${payload['ai']}.confirm", {"approve": false});
               Navigator.pop(ctx);
             },
-            child: const Text("拒绝执行", style: TextStyle(color: Colors.redAccent)),
+            child: Text("拒绝执行", style: TextStyle(color: Colors.red.shade300)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00FF41)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFB300),
+              foregroundColor: Colors.black,
+            ),
             onPressed: () {
               context.read<AgentClientProvider>().sendAction("${payload['ai']}.confirm", {"approve": true});
               Navigator.pop(ctx);
             },
-            child: const Text("批准执行", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: const Text("确认批准", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -73,25 +76,32 @@ class _VibeScreenState extends State<VibeScreen> {
     if (!provider.isConnected) {
       return Scaffold(
         body: Container(
+          width: double.infinity,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF0A0A0A), Color(0xFF1E1E1E)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2D2D2D), Color(0xFF121212)],
             ),
           ),
-          child: Center(
+          child: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.rocket_launch, size: 80, color: Color(0xFF00FF41)),
-                  const SizedBox(height: 24),
-                  const Text("Vibe 指挥中心", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 2, color: Colors.white)),
-                  const SizedBox(height: 8),
-                  const Text("随时随地指挥您的 AI 进行 Vibecoding", style: TextStyle(color: Colors.white38)),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 80),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFB300).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.coffee_rounded, size: 72, color: Color(0xFFFFB300)),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text("Vibe Control", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                  const Text("您的私人 AI 编程指挥官", style: TextStyle(color: Colors.white54, fontSize: 16)),
+                  const SizedBox(height: 64),
                   _buildLoginCard(provider),
                 ],
               ),
@@ -103,83 +113,75 @@ class _VibeScreenState extends State<VibeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.hub, size: 20, color: Color(0xFF00FF41)),
-            const SizedBox(width: 8),
-            const Text("指挥中心", style: TextStyle(fontWeight: FontWeight.bold)),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00FF41).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF00FF41).withOpacity(0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.circle, size: 8, color: Color(0xFF00FF41)),
-                  SizedBox(width: 4),
-                  Text("已连接", style: TextStyle(fontSize: 10, color: Color(0xFF00FF41))),
-                ],
-              ),
-            ),
-          ],
-        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text("指挥台", style: TextStyle(fontWeight: FontWeight.w900)),
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: "刷新目录",
-            onPressed: () => provider.sendAction("fs.list", {}),
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            child: IconButton(
+              icon: const Icon(Icons.sync_rounded),
+              onPressed: () => provider.sendAction("fs.list", {}),
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // 终端视窗
+          // 温暖色调的终端
           Container(
-            height: 200,
-            margin: const EdgeInsets.all(12),
+            height: 220,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
-              boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10)],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1E1E1E),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.terminal, size: 14, color: Colors.white38),
-                      SizedBox(width: 8),
-                      Text("实时日志回显 (stdout)", style: TextStyle(fontSize: 10, color: Colors.white38)),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    controller: _logScroll,
-                    padding: const EdgeInsets.all(8),
-                    itemCount: provider.logs.length,
-                    itemBuilder: (ctx, i) => Text(
-                      provider.logs[i],
-                      style: const TextStyle(color: Color(0xFF00FF41), fontSize: 11, fontFamily: 'monospace'),
-                    ),
-                  ),
-                ),
+              color: const Color(0xFF000000),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.2)),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFFFFB300).withOpacity(0.05), blurRadius: 20, spreadRadius: 5),
               ],
             ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                children: [
+                  Container(
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    color: const Color(0xFF2D2D2D),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle, size: 8, color: Colors.redAccent),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.circle, size: 8, color: Colors.orangeAccent),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.circle, size: 8, color: Colors.greenAccent),
+                        const SizedBox(width: 12),
+                        const Text("CONSOLE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.white38)),
+                        const Spacer(),
+                        Text(provider.isConnected ? "LIVE" : "OFFLINE", style: const TextStyle(fontSize: 10, color: Color(0xFFFFB300))),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _logScroll,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: provider.logs.length,
+                      itemBuilder: (ctx, i) => Text(
+                        provider.logs[i],
+                        style: const TextStyle(color: Color(0xFFFFCC80), fontSize: 12, fontFamily: 'monospace', height: 1.4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          // 动态功能面板
+          // 功能卡片
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               itemCount: provider.panels.length,
               itemBuilder: (ctx, i) => _buildPanel(provider.panels[i]),
             ),
@@ -192,38 +194,38 @@ class _VibeScreenState extends State<VibeScreen> {
   Widget _buildLoginCard(AgentClientProvider provider) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(28.0),
         child: Column(
           children: [
             TextField(
               controller: _ipController,
               decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.computer),
-                labelText: "Agent IP 地址",
-                hintText: "局域网 IP (如 192.168.1.5)",
+                prefixIcon: Icon(Icons.wifi_tethering_rounded, color: Color(0xFFFFB300)),
+                labelText: "服务器 IP",
+                hintText: "127.0.0.1",
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             TextField(
               controller: _tokenController,
               decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.key),
-                labelText: "鉴权 Token",
-                hintText: "查看电脑后台输出的 vibe-xxxx",
+                prefixIcon: Icon(Icons.key_rounded, color: Color(0xFFFFB300)),
+                labelText: "授权 Token",
+                hintText: "vibe-666888",
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00FF41),
+                  backgroundColor: const Color(0xFFFFB300),
                   foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
                 onPressed: () => provider.connect(_ipController.text, 9999, token: _tokenController.text),
-                child: const Text("建立安全连接", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: const Text("连接控制台", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
               ),
             ),
           ],
@@ -233,22 +235,24 @@ class _VibeScreenState extends State<VibeScreen> {
   }
 
   Widget _buildPanel(dynamic panel) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: ExpansionTile(
-        initiallyExpanded: true,
-        iconColor: const Color(0xFF00FF41),
-        collapsedIconColor: Colors.white38,
-        title: Text(panel['title'] ?? "", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: (panel['items'] as List).map(_buildItem).toList(),
+      child: Card(
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          shape: const RoundedRectangleBorder(side: BorderSide.none),
+          iconColor: const Color(0xFFFFB300),
+          title: Text(panel['title'] ?? "", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5)),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: (panel['items'] as List).map(_buildItem).toList(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -260,13 +264,13 @@ class _VibeScreenState extends State<VibeScreen> {
     if (type == 'button') {
       bool isDanger = id.toString().contains('stop') || id.toString().contains('kill');
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        padding: const EdgeInsets.only(top: 12),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: isDanger ? Colors.redAccent.withOpacity(0.1) : const Color(0xFF2A2A2A),
-            foregroundColor: isDanger ? Colors.redAccent : const Color(0xFF00FF41),
-            side: BorderSide(color: isDanger ? Colors.redAccent.withOpacity(0.3) : const Color(0xFF00FF41).withOpacity(0.2)),
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            backgroundColor: isDanger ? Colors.red.withOpacity(0.1) : const Color(0xFF333333),
+            foregroundColor: isDanger ? Colors.red.shade300 : const Color(0xFFFFCC80),
+            elevation: 0,
+            side: BorderSide(color: isDanger ? Colors.red.withOpacity(0.3) : Colors.transparent),
           ),
           onPressed: () {
             final params = <String, dynamic>{};
@@ -284,17 +288,17 @@ class _VibeScreenState extends State<VibeScreen> {
       final controllerKey = "${id}.${item['id']?.toString().split('.').last ?? 'text'}";
       _inputControllers.putIfAbsent(controllerKey, () => TextEditingController());
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.only(top: 16),
         child: TextField(
           controller: _inputControllers[controllerKey],
           maxLines: type == 'textarea' ? 4 : 1,
-          style: const TextStyle(fontSize: 14, color: Colors.white),
+          style: const TextStyle(fontSize: 15),
           decoration: InputDecoration(
             labelText: item['label'],
             hintText: item['placeholder'],
-            hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
+            hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
             isDense: true,
-            labelStyle: const TextStyle(color: Colors.white60),
+            alignLabelWithHint: true,
           ),
         ),
       );
