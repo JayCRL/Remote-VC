@@ -203,10 +203,14 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handleAction(ctx context.Context, seqRef int, id string, params map[string]any) {
+	fmt.Fprintf(os.Stderr, "[DEBUG] Received Action: %s | Params: %v\n", id, params)
+	
 	result := func(payload map[string]any) {
+		fmt.Fprintf(os.Stderr, "[DEBUG] Sending Result for: %s\n", id)
 		_ = s.send(ctx, Envelope{Seq: s.nextSeq(), Type: "action.result", Payload: merge(payload, map[string]any{"seqRef": seqRef, "id": id})})
 	}
 	errResult := func(code string, err error) {
+		fmt.Fprintf(os.Stderr, "[DEBUG] Error in Action %s: %s\n", id, code)
 		payload := map[string]any{"seqRef": seqRef, "id": id, "error": code}
 		if err != nil {
 			payload["detail"] = err.Error()
@@ -216,21 +220,24 @@ func (s *Server) handleAction(ctx context.Context, seqRef int, id string, params
 
 	switch id {
 	case "fs.list":
-		path := ""
-		if v, ok := params["path"].(string); ok {
-			path = v
+		path, _ := params["path"].(string)
+		if path == "" {
+			path, _ = params["q"].(string) // 兼容 q 参数作为路径
 		}
 		items, err := fs.ListDir(s.sess.Cwd(), path)
 		if err != nil {
 			errResult("fs_list_failed", err)
 			return
 		}
-		result(map[string]any{"items": items})
+		result(map[string]any{"items": items, "type": "file_list"})
 
 	case "fs.search":
 		q, _ := params["q"].(string)
 		if q == "" {
-			errResult("missing_q", errors.New("q required"))
+			q, _ = params["query"].(string) // 兼容 query 别名
+		}
+		if q == "" {
+			errResult("missing_q", errors.New("请输入搜索关键字"))
 			return
 		}
 		root := s.sess.AllowedRoot()
@@ -239,12 +246,15 @@ func (s *Server) handleAction(ctx context.Context, seqRef int, id string, params
 			errResult("fs_search_failed", err)
 			return
 		}
-		result(map[string]any{"root": root, "hits": hits})
+		result(map[string]any{"root": root, "hits": hits, "type": "search_result"})
 
 	case "fs.read":
 		path, _ := params["path"].(string)
 		if path == "" {
-			errResult("missing_path", errors.New("path required"))
+			path, _ = params["q"].(string) // 兼容前端误传
+		}
+		if path == "" {
+			errResult("missing_path", errors.New("未指定文件路径"))
 			return
 		}
 		content, err := fs.ReadFile(s.sess.AllowedRoot(), path)
@@ -252,7 +262,7 @@ func (s *Server) handleAction(ctx context.Context, seqRef int, id string, params
 			errResult("fs_read_failed", err)
 			return
 		}
-		result(map[string]any{"content": string(content)})
+		result(map[string]any{"content": string(content), "path": path, "type": "file_content"})
 
 	case "fs.write":
 		path, _ := params["path"].(string)
@@ -292,33 +302,33 @@ func (s *Server) handleAction(ctx context.Context, seqRef int, id string, params
 			errResult("project_detect_failed", err)
 			return
 		}
-		result(map[string]any{"project": info})
+		result(map[string]any{"project": info, "type": "project_info"})
 
 	case "claude.start":
 		if err := s.sess.ClaudeStart(); err != nil {
 			errResult("claude_start_failed", err)
 			return
 		}
-		result(map[string]any{"state": "starting"})
+		result(map[string]any{"state": "starting", "type": "ai_status"})
 
 	case "claude.send":
 		text, _ := params["text"].(string)
 		if text == "" {
-			errResult("missing_text", errors.New("text required"))
+			errResult("missing_text", errors.New("需求内容不能为空"))
 			return
 		}
 		if err := s.sess.ClaudeSend(text); err != nil {
 			errResult("claude_send_failed", err)
 			return
 		}
-		result(map[string]any{"sent": true})
+		result(map[string]any{"sent": true, "type": "ai_action"})
 
 	case "claude.stop":
 		if err := s.sess.ClaudeStop(); err != nil {
 			errResult("claude_stop_failed", err)
 			return
 		}
-		result(map[string]any{"stopped": true})
+		result(map[string]any{"stopped": true, "type": "ai_action"})
 
 	case "claude.confirm":
 		approve, _ := params["approve"].(bool)
@@ -326,33 +336,33 @@ func (s *Server) handleAction(ctx context.Context, seqRef int, id string, params
 			errResult("claude_confirm_failed", err)
 			return
 		}
-		result(map[string]any{"ok": true, "approve": approve})
+		result(map[string]any{"ok": true, "approve": approve, "type": "ai_action"})
 
 	case "gemini.start":
 		if err := s.sess.GeminiStart(); err != nil {
 			errResult("gemini_start_failed", err)
 			return
 		}
-		result(map[string]any{"state": "starting"})
+		result(map[string]any{"state": "starting", "type": "ai_status"})
 
 	case "gemini.send":
 		text, _ := params["text"].(string)
 		if text == "" {
-			errResult("missing_text", errors.New("text required"))
+			errResult("missing_text", errors.New("需求内容不能为空"))
 			return
 		}
 		if err := s.sess.GeminiSend(text); err != nil {
 			errResult("gemini_send_failed", err)
 			return
 		}
-		result(map[string]any{"sent": true})
+		result(map[string]any{"sent": true, "type": "ai_action"})
 
 	case "gemini.stop":
 		if err := s.sess.GeminiStop(); err != nil {
 			errResult("gemini_stop_failed", err)
 			return
 		}
-		result(map[string]any{"stopped": true})
+		result(map[string]any{"stopped": true, "type": "ai_action"})
 
 	case "gemini.confirm":
 		approve, _ := params["approve"].(bool)
@@ -360,7 +370,7 @@ func (s *Server) handleAction(ctx context.Context, seqRef int, id string, params
 			errResult("gemini_confirm_failed", err)
 			return
 		}
-		result(map[string]any{"ok": true, "approve": approve})
+		result(map[string]any{"ok": true, "approve": approve, "type": "ai_action"})
 
 	case "terminal.exec":
 		cmd, _ := params["cmd"].(string)

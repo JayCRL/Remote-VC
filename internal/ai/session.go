@@ -107,6 +107,11 @@ func Start(opts StartOptions) (*Session, error) {
 func (s *Session) wait() {
 	err := s.cmd.Wait()
 	s.waitErr.Store(err)
+	if err != nil {
+		if s.onOutput != nil {
+			s.onOutput([]byte("\n[AI 进程异常退出: "+err.Error()+"]\n"), "\n[AI 进程异常退出: "+err.Error()+"]\n")
+		}
+	}
 	close(s.closed)
 	if s.onState != nil {
 		s.onState("stopped")
